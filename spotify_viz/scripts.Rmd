@@ -1,0 +1,94 @@
+---
+title: "spotify_viz_data_processing"
+author: "Aleksey Klimchenko"
+date: "6/6/2021"
+output: html_document
+---
+
+```{r libraries}
+library(shiny)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(DT)
+library(tidyverse)
+library(OneR)
+```
+
+## Import the foreign market data
+
+```{r load data}
+BI_raw.df <- readr::read_csv("./BI.csv")
+BI_df = BI_raw.df %>% mutate(market_code = "BI")
+CA_raw.df <- readr::read_csv("./CA.csv")
+CA_df = CA_raw.df %>% mutate(market_code = "CA")
+CH_raw.df <- readr::read_csv("./CH.csv")
+CH_df = CH_raw.df %>% mutate(market_code = "CH")
+CL_raw.df <- readr::read_csv("./CL.csv")
+CL_df = CL_raw.df %>% mutate(market_code = "CL")
+
+
+```
+```{r}
+BI_df <- filter(BI_df, popularity >=10) %>% arrange(desc(popularity))
+```
+
+
+## Create Boxplot
+
+
+```{r boxplot}
+BI_df %>% mutate( bin=cut_width(popularity, width=10, boundary=0)) %>%
+  ggplot( aes(x=bin, y=followers) ) +
+  geom_boxplot(color = "black", fill="#1DB954") +
+  theme(panel.grid.minor = element_line(colour="white", size=0.5)) +
+  theme(panel.grid.major = element_line(colour="#191414", size=0.5)) +
+#  theme(panel.background = element_rect(fill = "#191414"))
+  scale_y_continuous(trans='log10') +
+  xlab("Popularity") +
+  ylab("Followers")
+
+```
+
+
+```{r}
+tmp_df = left_join(BI_df, select(CA_df, c(id, market_code)),
+                   by = "id",
+                   suffix = c("_BI", "_CA"))
+tmp_df
+
+
+```
+```{r}
+setwd("C:\Users\pengu\Documents\GitHub Repos\NYCDSA Project 2 - R\R_data_analysis\spotify_viz\temp_markets")
+
+for (data in list.files()){
+  # create first df if no data exists yet
+  # make new column for market codes
+  if(!exists("dataset")){
+    tmp_code = tools::file_path_sans_ext(data)
+    dataset<-read.csv(data, header=TRUE) %>% 
+      mutate(market_codes = c(tmp_code))
+  }
+  
+  # if data exists, then append it together
+  if(exists("dataset")){
+    temp <- read.csv(data, header=TRUE)
+    tmp_code = tools::file_path_sans_ext(data)
+    dataset <- unique(rbind(dataset, temp))
+    rm(temp)
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
